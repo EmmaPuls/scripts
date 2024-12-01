@@ -1,3 +1,4 @@
+## Interactive git squash
 squash() {
   count=$1
   shift
@@ -42,4 +43,13 @@ squash() {
     fi
     has_message=true
   fi
+
+  # Finish the squash
+  echo ""
+  echo "${bold}Squashing commits...${normal}"
+  git reset --soft HEAD~$count
+  git commit $commit_options -m "$message"
+  echo ""
+  echo "${bold}Squash complete!${normal}"
+  echo "Latest commit message: $message"
 }
