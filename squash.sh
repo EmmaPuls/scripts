@@ -1,20 +1,27 @@
 ## Interactive git squash
 squash() {
+  # ANSI escape codes for bold text
+  bold=$(tput bold)
+  normal=$(tput sgr0)
+  # The first variable is the number of commits to squash
   count=$1
   shift
+
+  # Initialise other variables
   has_message=false
   message=""
   commit_options=""
+
+  # Parse the rest of the arguments
+  # If -m is present, store the message and remove it from the arguments
   while [ $# -gt 0 ]; do
     case $1 in
-      -m) has_message=true; message="$2"; shift ;; # Just store the message without -m for display
+      -m) has_message=true; message="$2"; shift ;; 
       *) commit_options="$commit_options $1" ;;
     esac
     shift
   done
-  # ANSI escape codes for bold text
-  bold=$(tput bold)
-  normal=$(tput sgr0)
+
   echo "${bold}You are about to squash the last $count commits.${normal}"
   echo ""
   # Capture recent commit messages into a variable
@@ -48,8 +55,29 @@ squash() {
   echo ""
   echo "${bold}Squashing commits...${normal}"
   git reset --soft HEAD~$count
-  git commit $commit_options -m "$message"
-  echo ""
-  echo "${bold}Squash complete!${normal}"
-  echo "Latest commit message: $message"
+
+  # Check if git reset was successful
+  if [ $? -ne 0 ]; then
+    echo "${bold}Error: git reset failed.${normal}"
+    return 1
+  else
+    echo "${bold}Reset successful.${normal}"
+  fi
+
+  eval "git commit -m \"$message\" $commit_options"
+
+  # Check if git commit was successful
+  if [ $? -ne 0 ]; then
+    echo "${bold}Error: git commit failed.${normal}"
+    echo ""
+    echo "${bold}Resetting to previous state...${normal}"
+
+    # Reset to the previous state
+    git reset --hard 'HEAD@{1}'
+    return 1
+  else
+    echo ""
+    echo "${bold}Squash complete!${normal}"
+    echo "Latest commit message: $message"
+  fi
 }
